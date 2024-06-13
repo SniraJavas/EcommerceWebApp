@@ -1,57 +1,150 @@
-# EcommerceWebApp
-Great choice! An e-commerce website is a comprehensive project that will touch upon many essential Angular features and prepare you well for an interview. Let's outline the main components and features for this project, along with some implementation details.
+# Style Shop
 
-### E-commerce Website
+Great, let's build upon the detailed plan for the e-commerce application. We will use the outline you provided and go into more details where necessary to ensure a comprehensive understanding of the architecture and implementation.
+
+### E-commerce Website Architecture
 
 #### 1. Project Setup
 
-1. **Create a new Angular project:**
-   ```sh
-   ng new ecommerce-website
-   cd ecommerce-website
-   ng add @angular/material
-   ```
+**Initial Setup:**
+```sh
+ng new ecommerce-website
+cd ecommerce-website
+ng add @angular/material
+```
 
-2. **Install necessary dependencies:**
-   ```sh
-   npm install @angular/forms @angular/router @angular/material @ngrx/store @ngrx/effects @ngrx/entity @ngrx/store-devtools
-   ```
+**Install Necessary Dependencies:**
+```sh
+npm install @angular/forms @angular/router @angular/material @ngrx/store @ngrx/effects @ngrx/entity @ngrx/store-devtools
+```
 
 #### 2. Components
 
-1. **Product Listing and Details**
+**Components Overview:**
 
-   - **ProductListComponent**: Displays a list of products.
-   - **ProductDetailComponent**: Displays detailed information about a selected product.
+1. **Product Listing and Details**
+   - `ProductListComponent`: Displays a list of products.
+   - `ProductDetailComponent`: Displays detailed information about a selected product.
 
 2. **Shopping Cart**
-
-   - **CartComponent**: Displays the items in the shopping cart.
-   - **CartItemComponent**: Displays individual cart items.
+   - `CartComponent`: Displays the items in the shopping cart.
+   - `CartItemComponent`: Displays individual cart items.
 
 3. **User Authentication**
-
-   - **LoginComponent**: Allows users to log in.
-   - **RegisterComponent**: Allows users to register a new account.
+   - `LoginComponent`: Allows users to log in.
+   - `RegisterComponent`: Allows users to register a new account.
 
 4. **Order Management**
+   - `OrderHistoryComponent`: Displays past orders.
+   - `OrderDetailComponent`: Displays details of a specific order.
 
-   - **OrderHistoryComponent**: Displays past orders.
-   - **OrderDetailComponent**: Displays details of a specific order.
+**Example: ProductListComponent:**
+```typescript
+// product-list.component.ts
+import { Component, OnInit } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { loadProducts } from '../store/actions/product.actions';
+import { selectAllProducts } from '../store/selectors/product.selectors';
+
+@Component({
+  selector: 'app-product-list',
+  templateUrl: './product-list.component.html',
+  styleUrls: ['./product-list.component.css']
+})
+export class ProductListComponent implements OnInit {
+  products$ = this.store.select(selectAllProducts);
+
+  constructor(private store: Store) {}
+
+  ngOnInit(): void {
+    this.store.dispatch(loadProducts());
+  }
+}
+```
+
+**Example: ProductListComponent Template:**
+```html
+<!-- product-list.component.html -->
+<div class="product-list">
+  <mat-card *ngFor="let product of products$ | async" class="product-card">
+    <mat-card-header>
+      <mat-card-title>{{ product.name }}</mat-card-title>
+      <mat-card-subtitle>{{ product.price | currency }}</mat-card-subtitle>
+    </mat-card-header>
+    <img mat-card-image [src]="product.imageUrl" alt="{{ product.name }}">
+    <mat-card-content>
+      <p>{{ product.description }}</p>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-button (click)="addToCart(product)">Add to Cart</button>
+    </mat-card-actions>
+  </mat-card>
+</div>
+```
 
 #### 3. Services
 
-1. **ProductService**: Handles API calls for product data.
-2. **CartService**: Manages the shopping cart data and operations.
-3. **AuthService**: Manages user authentication and registration.
-4. **OrderService**: Handles order creation and fetching order history.
+**ProductService:**
+```typescript
+// product.service.ts
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { Product } from './product.model';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ProductService {
+  private apiUrl = 'https://api.example.com/products';
+
+  constructor(private http: HttpClient) {}
+
+  getProducts(): Observable<Product[]> {
+    return this.http.get<Product[]>(this.apiUrl);
+  }
+
+  getProductById(id: number): Observable<Product> {
+    return this.http.get<Product>(`${this.apiUrl}/${id}`);
+  }
+}
+```
+
+**CartService:**
+```typescript
+// cart.service.ts
+import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
+import { Product } from './product.model';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CartService {
+  private cartItems: Product[] = [];
+  private cartItemsSubject = new BehaviorSubject<Product[]>([]);
+
+  getCartItems() {
+    return this.cartItemsSubject.asObservable();
+  }
+
+  addToCart(product: Product) {
+    this.cartItems.push(product);
+    this.cartItemsSubject.next(this.cartItems);
+  }
+
+  removeFromCart(product: Product) {
+    this.cartItems = this.cartItems.filter(item => item.id !== product.id);
+    this.cartItemsSubject.next(this.cartItems);
+  }
+}
+```
 
 #### 4. Routing
 
-Set up Angular routing to navigate between different views.
-
-**app-routing.module.ts:**
+**Routing Configuration:**
 ```typescript
+// app-routing.module.ts
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { ProductListComponent } from './product-list/product-list.component';
@@ -80,10 +173,9 @@ export class AppRoutingModule { }
 
 #### 5. Forms
 
-Use reactive forms for handling user input in login, registration, and checkout.
-
-**login.component.ts:**
+**Reactive Forms Example: Login Component:**
 ```typescript
+// login.component.ts
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../auth.service';
@@ -115,7 +207,7 @@ export class LoginComponent {
 
 #### 6. State Management with NgRx
 
-Use NgRx to manage the state of the application, including products, cart, and user authentication.
+**Actions, Reducers, and Selectors:**
 
 **product.actions.ts:**
 ```typescript
@@ -130,7 +222,7 @@ export const loadProductsFailure = createAction('[Product] Load Products Failure
 **product.reducer.ts:**
 ```typescript
 import { createReducer, on } from '@ngrx/store';
-import { loadProducts, loadProductsSuccess, loadProductsFailure } from './product.actions';
+import { loadProducts, loadProductsSuccess, loadProductsFailure } from '../actions/product.actions';
 import { Product } from '../product.model';
 
 export interface ProductState {
@@ -155,9 +247,22 @@ export function productReducer(state, action) {
 }
 ```
 
+**product.selectors.ts:**
+```typescript
+import { createSelector } from '@ngrx/store';
+import { ProductState } from '../reducers/product.reducer';
+
+export const selectProductState = (state: AppState) => state.products;
+
+export const selectAllProducts = createSelector(
+  selectProductState,
+  (state: ProductState) => state.products
+);
+```
+
 #### 7. Authentication
 
-**auth.service.ts:**
+**AuthService:**
 ```typescript
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
@@ -191,7 +296,7 @@ export class AuthService {
 }
 ```
 
-**auth.guard.ts:**
+**Auth Guard:**
 ```typescript
 import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
@@ -217,12 +322,16 @@ export class AuthGuard implements CanActivate {
 
 #### 8. Order Management
 
-**order.service.ts:**
+**OrderService:**
+Certainly! Let's complete the `OrderService` and provide a more detailed implementation along with the `Order` model.
+
+### `order.service.ts`
+
 ```typescript
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Order } from './order.model';
+import { Order } from '../models/order.model';
 
 @Injectable({
   providedIn: 'root'
@@ -232,94 +341,332 @@ export class OrderService {
 
   constructor(private http: HttpClient) {}
 
+  // Place a new order
   placeOrder(order: Order): Observable<Order> {
     return this.http.post<Order>(this.apiUrl, order);
   }
 
+  // Fetch order history for the logged-in user
   getOrderHistory(): Observable<Order[]> {
     return this.http.get<Order[]>(this.apiUrl);
   }
+
+  // Fetch details of a specific order
+  getOrderById(orderId: string): Observable<Order> {
+    return this.http.get<Order>(`${this.apiUrl}/${orderId}`);
+  }
 }
 ```
 
-#### 9. UI Components with Angular Material
+### `order.model.ts`
 
-Use Angular Material components to build a responsive and user-friendly UI. For example, use `<mat-card>` for product display, `<mat-form-field>` and `<mat-input>` for forms, and `<mat-toolbar>` for navigation.
+```typescript
+export interface Order {
+  id: string;
+  userId: string;
+  items: OrderItem[];
+  totalAmount: number;
+  orderDate: string;
+  status: 'Pending' | 'Completed' | 'Cancelled';
+}
 
-**product-list.component.html:**
+export interface OrderItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  price: number;
+}
+```
+
+### Order Components
+
+#### `order-history.component.ts`
+
+```typescript
+import { Component, OnInit } from '@angular/core';
+import { OrderService } from '../services/order.service';
+import { Order } from '../models/order.model';
+
+@Component({
+  selector: 'app-order-history',
+  templateUrl: './order-history.component.html',
+  styleUrls: ['./order-history.component.css']
+})
+export class OrderHistoryComponent implements OnInit {
+  orders: Order[] = [];
+
+  constructor(private orderService: OrderService) {}
+
+  ngOnInit(): void {
+    this.orderService.getOrderHistory().subscribe(
+      (orders) => this.orders = orders,
+      (error) => console.error('Failed to fetch order history', error)
+    );
+  }
+}
+```
+
+#### `order-history.component.html`
+
 ```html
-<div class="product-list">
-  <mat-card *ngFor="let product of products" class="product-card">
-    <mat-card-header>
-      <mat-card-title>{{ product.name }}</mat-card-title>
-      <mat-card-subtitle>{{ product.price | currency }}</mat-card-subtitle>
-    </mat-card-header>
-    <img mat-card-image [src]="product.imageUrl" alt="{{ product.name }}">
-    <mat-card-content>
-      <p>{{ product.description }}</p>
-    </mat-card-content>
-    <mat-card-actions>
-      <button mat-button (click)="addToCart(product)">Add to Cart</button>
-    </mat-card-actions>
-  </mat-card>
+<div class="order-history">
+  <h2>Your Order History</h2>
+  <div *ngIf="orders.length === 0">No orders found.</div>
+  <div *ngFor="let order of orders">
+    <mat-card class="order-card">
+      <mat-card-title>Order ID: {{ order.id }}</mat-card-title>
+      <mat-card-subtitle>Date: {{ order.orderDate }}</mat-card-subtitle>
+      <mat-card-content>
+        <div *ngFor="let item of order.items">
+          <p>{{ item.productName }} - {{ item.quantity }} x {{ item.price | customCurrency }}</p>
+        </div>
+        <p><strong>Total: {{ order.totalAmount | customCurrency }}</strong></p>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-button [routerLink]="['/order', order.id]">View Details</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
 </div>
 ```
 
-#### 10. Custom Directives and Pipes
+#### `order-detail.component.ts`
 
-Create custom directives and pipes to enhance functionality.
-
-**highlight.directive.ts:**
 ```typescript
-import { Directive, ElementRef, HostListener } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { OrderService } from '../services/order.service';
+import { Order } from '../models/order.model';
 
-@Directive({
-  selector: '[appHighlight]'
+@Component({
+  selector: 'app-order-detail',
+  templateUrl: './order-detail.component.html',
+  styleUrls: ['./order-detail.component.css']
 })
-export class HighlightDirective {
-  constructor(private el: ElementRef) {}
+export class OrderDetailComponent implements OnInit {
+  order: Order;
 
-  @HostListener('mouseenter') onMouseEnter() {
-    this.highlight('yellow');
-  }
+  constructor(private route: ActivatedRoute, private orderService: OrderService) {}
 
-  @HostListener('mouseleave') onMouseLeave() {
-    this.highlight(null);
-  }
-
-  private highlight(color: string) {
-    this.el.nativeElement.style.backgroundColor = color;
+  ngOnInit(): void {
+    const orderId = this.route.snapshot.paramMap.get('id');
+    if (orderId) {
+      this.orderService.getOrderById(orderId).subscribe(
+        (order) => this.order = order,
+        (error) => console.error('Failed to fetch order details', error)
+      );
+    }
   }
 }
 ```
 
-**currency.pipe.ts:**
-```typescript
-import { Pipe, PipeTransform } from '@angular/core';
+#### `order-detail.component.html`
 
-@Pipe({
-  name: 'customCurrency'
+```html
+<div class="order-detail" *ngIf="order">
+  <h2>Order Details</h2>
+  <p><strong>Order ID:</strong> {{ order.id }}</p>
+  <p><strong>Order Date:</strong> {{ order.orderDate }}</p>
+  <p><strong>Status:</strong> {{ order.status }}</p>
+  <h3>Items:</h3>
+  <ul>
+    <li *ngFor="let item of order.items">
+      {{ item.productName }} - {{ item.quantity }} x {{ item.price | customCurrency }}
+    </li>
+  </ul>
+  <p><strong>Total Amount:</strong> {{ order.totalAmount | customCurrency }}</p>
+</div>
+```
+
+### Routing for Order Components
+
+Update `app-routing.module.ts` to include routes for order history and order detail components.
+
+```typescript
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { ProductListComponent } from './components/product/product-list.component';
+import { ProductDetailComponent } from './components/product/product-detail.component';
+import { CartComponent } from './components/cart/cart.component';
+import { LoginComponent } from './components/user/login.component';
+import { RegisterComponent } from './components/user/register.component';
+import { OrderHistoryComponent } from './components/order/order-history.component';
+import { OrderDetailComponent } from './components/order/order-detail.component';
+import { AuthGuard } from './guards/auth.guard';
+
+const routes: Routes = [
+  { path: '', component: ProductListComponent },
+  { path: 'product/:id', component: ProductDetailComponent },
+  { path: 'cart', component: CartComponent },
+  { path: 'login', component: LoginComponent },
+  { path: 'register', component: RegisterComponent },
+  { path: 'orders', component: OrderHistoryComponent, canActivate: [AuthGuard] },
+  { path: 'order/:id', component: OrderDetailComponent, canActivate: [AuthGuard] }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
 })
-export class CustomCurrencyPipe implements PipeTransform {
-  transform(value: number, ...args: unknown[]): string {
-    return '$' + value.toFixed(2);
-  }
-}
+export class AppRoutingModule { }
 ```
 
 ### Summary
 
-This e-commerce project will help you cover a wide range of Angular features, including:
+The `OrderService` is now complete, with methods for placing an order, fetching order history, and retrieving details of a specific order. Additionally, we've created components for displaying order history and order details, complete with the necessary HTML templates. The routing has been updated to include paths for these components, ensuring that they are accessible within the application.
 
-- Project setup and configuration
-- Component creation and communication
-- Services for data handling and state management
-- Routing and route guards
-- Reactive forms and validation
-- State management with NgRx
-- User authentication and route protection
-- Order management
-- Custom directives and pipes
-- Responsive UI with Angular Material
+This setup provides a comprehensive architecture for handling orders within the e-commerce application, covering both the service layer and the user interface.
+## Architecture
+Certainly! Here's an organized folder structure for the e-commerce application along with a detailed explanation of each folder's purpose and the placement of the different components, services, and other modules:
 
-By building
+### Folder Structure
+
+```
+ecommerce-website/
+|-- src/
+|   |-- app/
+|   |   |-- components/
+|   |   |   |-- cart/
+|   |   |   |   |-- cart.component.ts
+|   |   |   |   |-- cart.component.html
+|   |   |   |   |-- cart.component.css
+|   |   |   |   |-- cart-item/
+|   |   |   |   |   |-- cart-item.component.ts
+|   |   |   |   |   |-- cart-item.component.html
+|   |   |   |   |   |-- cart-item.component.css
+|   |   |   |-- product/
+|   |   |   |   |-- product-list.component.ts
+|   |   |   |   |-- product-list.component.html
+|   |   |   |   |-- product-list.component.css
+|   |   |   |   |-- product-detail.component.ts
+|   |   |   |   |-- product-detail.component.html
+|   |   |   |   |-- product-detail.component.css
+|   |   |   |-- user/
+|   |   |   |   |-- login.component.ts
+|   |   |   |   |-- login.component.html
+|   |   |   |   |-- login.component.css
+|   |   |   |   |-- register.component.ts
+|   |   |   |   |-- register.component.html
+|   |   |   |   |-- register.component.css
+|   |   |   |-- order/
+|   |   |       |-- order-history.component.ts
+|   |   |       |-- order-history.component.html
+|   |   |       |-- order-history.component.css
+|   |   |       |-- order-detail.component.ts
+|   |   |       |-- order-detail.component.html
+|   |   |       |-- order-detail.component.css
+|   |   |-- services/
+|   |   |   |-- product.service.ts
+|   |   |   |-- cart.service.ts
+|   |   |   |-- auth.service.ts
+|   |   |   |-- order.service.ts
+|   |   |-- store/
+|   |   |   |-- actions/
+|   |   |   |   |-- product.actions.ts
+|   |   |   |-- reducers/
+|   |   |   |   |-- product.reducer.ts
+|   |   |   |   |-- index.ts
+|   |   |   |-- selectors/
+|   |   |   |   |-- product.selectors.ts
+|   |   |   |-- effects/
+|   |   |       |-- product.effects.ts
+|   |   |-- guards/
+|   |   |   |-- auth.guard.ts
+|   |   |-- models/
+|   |   |   |-- product.model.ts
+|   |   |   |-- user.model.ts
+|   |   |   |-- order.model.ts
+|   |   |-- directives/
+|   |   |   |-- highlight.directive.ts
+|   |   |-- pipes/
+|   |   |   |-- currency.pipe.ts
+|   |   |-- app-routing.module.ts
+|   |   |-- app.component.ts
+|   |   |-- app.component.html
+|   |   |-- app.component.css
+|   |   |-- app.module.ts
+|   |-- assets/
+|   |-- environments/
+|   |   |-- environment.ts
+|   |   |-- environment.prod.ts
+|   |-- index.html
+|   |-- main.ts
+|   |-- styles.scss
+|-- angular.json
+|-- package.json
+|-- tsconfig.json
+```
+
+### Explanation of Folder Structure
+
+1. **src/app**: Main folder for the Angular application.
+   - **components**: Contains all the reusable and feature-specific components.
+     - **cart**: Contains components related to the shopping cart.
+       - **cart.component.ts, .html, .css**: Main cart component files.
+       - **cart-item**: Subfolder for individual cart item component.
+     - **product**: Contains components related to product listing and details.
+       - **product-list.component.ts, .html, .css**: Product list component files.
+       - **product-detail.component.ts, .html, .css**: Product detail component files.
+     - **user**: Contains components for user authentication.
+       - **login.component.ts, .html, .css**: Login component files.
+       - **register.component.ts, .html, .css**: Register component files.
+     - **order**: Contains components for order management.
+       - **order-history.component.ts, .html, .css**: Order history component files.
+       - **order-detail.component.ts, .html, .css**: Order detail component files.
+   
+   - **services**: Contains all the services for handling business logic and data operations.
+     - **product.service.ts**: Service for managing product data.
+     - **cart.service.ts**: Service for managing shopping cart operations.
+     - **auth.service.ts**: Service for handling user authentication.
+     - **order.service.ts**: Service for managing orders.
+
+   - **store**: Contains all NgRx related files for state management.
+     - **actions**: Defines actions for the NgRx store.
+       - **product.actions.ts**: Actions for products.
+     - **reducers**: Contains reducers for handling state changes.
+       - **product.reducer.ts**: Reducer for product state.
+       - **index.ts**: Combines all reducers.
+     - **selectors**: Selectors for querying state.
+       - **product.selectors.ts**: Selectors for product state.
+     - **effects**: Defines side effects for the NgRx store.
+       - **product.effects.ts**: Effects for product-related actions.
+
+   - **guards**: Contains route guards to protect routes.
+     - **auth.guard.ts**: Guard for protecting routes that require authentication.
+
+   - **models**: Defines TypeScript interfaces or classes for data models.
+     - **product.model.ts**: Model for products.
+     - **user.model.ts**: Model for users.
+     - **order.model.ts**: Model for orders.
+
+   - **directives**: Contains custom directives.
+     - **highlight.directive.ts**: Example directive for highlighting elements.
+
+   - **pipes**: Contains custom pipes.
+     - **currency.pipe.ts**: Example pipe for formatting currency.
+
+   - **app-routing.module.ts**: Defines the routing configuration for the application.
+
+   - **app.component.ts, .html, .css**: Root component of the application.
+
+   - **app.module.ts**: Root module of the application.
+
+2. **assets**: Contains static assets such as images, fonts, etc.
+
+3. **environments**: Contains environment-specific configuration files.
+   - **environment.ts**: Development environment configuration.
+   - **environment.prod.ts**: Production environment configuration.
+
+4. **index.html**: Main HTML file of the application.
+
+5. **main.ts**: Entry point of the application.
+
+6. **styles.scss**: Global styles for the application.
+
+7. **angular.json**: Angular workspace configuration file.
+
+8. **package.json**: Contains project dependencies and scripts.
+
+9. **tsconfig.json**: TypeScript configuration file.
+
+This structure ensures a clear separation of concerns, making the application scalable and maintainable. Each feature has its own directory, and shared resources like services, models, and state management files are organized into their respective folders.
